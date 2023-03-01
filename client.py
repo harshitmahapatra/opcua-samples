@@ -1,6 +1,5 @@
 import asyncio
 
-import requests
 from asyncua import Client
 
 url = "opc.tcp://localhost:4840/factoryml/server/"
@@ -8,17 +7,6 @@ namespace = "http://factoryml.alexandra.dk"
 
 
 def call_addition_model(val_a, val_b):
-    # mlflow_url = "http://localhost:5000/invocations"
-
-    # payload = {
-    #     "dataframe_split": {"columns": ["a", "b", "c"], "data": [[1, 2, 3], [4, 5, 6]]}
-    # }
-
-    # payload_actual = {"a": val_a, "b": val_b}
-
-    # sum = requests.get(url=mlflow_url,json=payload_actual)
-    # print(sum)
-    # raise ValueError()
     return val_a + val_b
 
 
