@@ -10,6 +10,9 @@ import dataplane_pb2_grpc
 def add_numbers(
     mlserver_grpc_url: str, model_name: str, input_values: Dict[str, np.ndarray]
 ) -> int:
+    print("----INPUT VALUES----")
+    print(input_values)
+
     channel = grpc.insecure_channel(target=mlserver_grpc_url)
     stub = dataplane_pb2_grpc.GRPCInferenceServiceStub(channel=channel)
 
@@ -31,7 +34,10 @@ def add_numbers(
         model_inference_req
     )
 
-    parse_output_values(model_inference_res.outputs)
+    output_values = parse_output_values(model_inference_res.outputs)
+
+    print("----OUTPUT VALUES----")
+    print(output_values)
 
     return 0
 
@@ -46,9 +52,9 @@ def generate_infer_inputs(
         input_value = inputs_values[input.name]
         if not hasattr(input_value, "__iter__"):
             input_value = [input_value]
-            input_tensor_contents = insert_value_into_tensor_content(
-                datatype=input.datatype, input_value=input_value
-            )
+        input_tensor_contents = insert_value_into_tensor_content(
+            datatype=input.datatype, input_value=input_value
+        )
 
         input_iterable.append(
             dataplane_pb2.ModelInferRequest.InferInputTensor(
