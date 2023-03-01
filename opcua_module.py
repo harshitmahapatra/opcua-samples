@@ -16,11 +16,20 @@ def add_numbers(
     channel = grpc.insecure_channel(target=mlserver_grpc_url)
     stub = dataplane_pb2_grpc.GRPCInferenceServiceStub(channel=channel)
 
+    print("Gathering model request specification...")
+
     model_metadata_req = dataplane_pb2.ModelMetadataRequest(name=model_name)
 
     model_metadata: dataplane_pb2.ModelMetadataResponse = stub.ModelMetadata(
         model_metadata_req
     )
+
+    print("----DISCOVERED INPUT SPEC----")
+    print(model_metadata.inputs)
+    print("----DISCOVERED OUTPUT SPEC----")
+    print(model_metadata.outputs)
+
+    print("Calling model inference...")
 
     inference_inputs = generate_infer_inputs(
         inputs_metadata=model_metadata.inputs, inputs_values=input_values
