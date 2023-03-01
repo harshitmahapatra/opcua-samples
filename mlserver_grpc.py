@@ -1,7 +1,6 @@
 from typing import Dict, List
 
 import grpc
-import numpy as np
 
 import dataplane_pb2
 import dataplane_pb2_grpc
