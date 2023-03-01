@@ -15,33 +15,33 @@ async def main():
     # setup our server
     server = Server()
     await server.init()
-    server.set_endpoint("opc.tcp://0.0.0.0:4840/freeopcua/server/")
+    server.set_endpoint("opc.tcp://0.0.0.0:4840/factoryml/server/")
 
     # set up our own namespace, not really necessary but should as spec
-    uri = "http://examples.freeopcua.github.io"
+    uri = "http://factoryml.alexandra.dk"
     idx = await server.register_namespace(uri)
 
     # populating our address space
     # server.nodes, contains links to very common nodes like objects and root
-    myobj = await server.nodes.objects.add_object(idx, "MyObject")
-    myvar = await myobj.add_variable(idx, "MyVariable", 6.7)
-    # Set MyVariable to be writable by clients
-    await myvar.set_writable()
-    await server.nodes.objects.add_method(
-        ua.NodeId("ServerMethod", idx),
-        ua.QualifiedName("ServerMethod", idx),
-        func,
-        [ua.VariantType.Int64],
-        [ua.VariantType.Int64],
-    )
+
+    mlObject = await server.nodes.objects.add_object(idx, "MLObject")
+    a = await mlObject.add_variable(idx, "a", 5)
+    b = await mlObject.add_variable(idx, "b", 6)
+    sum = await mlObject.add_variable(idx, "sum", 0)
+
+    # Set output variable to be writable by client
+    await a.set_writable()
+    await b.set_writable()
+    await sum.set_writable()
+
     _logger.info("Starting server!")
     async with server:
         while True:
-            await asyncio.sleep(1)
-            new_val = await myvar.get_value() + 0.1
-            _logger.info("Set value of %s to %.1f", myvar, new_val)
-            await myvar.write_value(new_val)
-
+            await asyncio.sleep(5)
+            val_a = await a.get_value()
+            val_b = await b.get_value()
+            val_sum = await sum.get_value()
+            _logger.info(f"The sum of input a {val_a} and  input b {val_b} is sum {val_sum}.")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
