@@ -11,12 +11,12 @@ import dataplane_pb2_grpc
 
 
 def call_model(mlserver_grpc_url: str, model_name: str, input_values: Dict) -> Dict:
-    print(f"\n---INPUT VALUES---\n {input_values}")
+    logging.info(f"\n---INPUT VALUES---\n {input_values}")
 
     channel = grpc.insecure_channel(target=mlserver_grpc_url)
     stub = dataplane_pb2_grpc.GRPCInferenceServiceStub(channel=channel)
 
-    print("Gathering model request specification...")
+    logging.info("Gathering model request specification...")
 
     model_metadata_req = dataplane_pb2.ModelMetadataRequest(name=model_name)
 
@@ -24,10 +24,10 @@ def call_model(mlserver_grpc_url: str, model_name: str, input_values: Dict) -> D
         model_metadata_req
     )
 
-    print(f"\n----DISCOVERED INPUT SPEC----\n {model_metadata.inputs}")
-    print(f"\n----DISCOVERED OUTPUT SPEC----\n {model_metadata.outputs}")
+    logging.info(f"\n----DISCOVERED INPUT SPEC----\n {model_metadata.inputs}")
+    logging.info(f"\n----DISCOVERED OUTPUT SPEC----\n {model_metadata.outputs}")
 
-    print("Calling model inference...")
+    logging.info("Calling model inference...")
 
     inference_inputs = generate_infer_inputs(
         inputs_metadata=model_metadata.inputs, inputs_values=input_values
@@ -43,7 +43,7 @@ def call_model(mlserver_grpc_url: str, model_name: str, input_values: Dict) -> D
 
     output_values = parse_output_values(model_inference_res.outputs)
 
-    print(f"\n----OUTPUT VALUES----\n {output_values}")
+    logging.info(f"\n----OUTPUT VALUES----\n {output_values}")
 
     return output_values
 
@@ -172,11 +172,11 @@ async def link_opcua_server_and_ml_model(config):
     inputs = config["tag_mapping"]["inputs"]
     outputs = config["tag_mapping"]["outputs"]
 
-    print(f"Connecting to {opcua_server_url} ...")
+    logging.info(f"Connecting to {opcua_server_url} ...")
     async with Client(url=opcua_server_url) as client:
         # Find the namespace index
         nsidx = await client.get_namespace_index(opcua_namespace)
-        print(f"Namespace Index for '{opcua_namespace}': {nsidx}")
+        logging.info(f"Namespace Index for '{opcua_namespace}': {nsidx}")
 
         input_values = {}
 
@@ -186,7 +186,7 @@ async def link_opcua_server_and_ml_model(config):
         predict = await predict_obj.read_value()
 
         if predict:
-            print("Predict is enabled continuing with prediction...")
+            logging.info("Predict is enabled continuing with prediction...")
             for input in inputs:
                 input_obj = await client.nodes.root.get_child(
                     ["0:Objects", f"{nsidx}:{model_name}", f"{nsidx}:{input['tag']}"]
@@ -203,8 +203,9 @@ async def link_opcua_server_and_ml_model(config):
                 await output_obj.write_value(output_values[output["name"]])
             await predict_obj.write_value(False)
         else:
-            print("Predict is disabled skipping prediction...")
+            logging.info("Predict is disabled skipping prediction...")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     config = load_config()
     asyncio.run(link_opcua_server_and_ml_model(config))
