@@ -1,0 +1,14 @@
+model_name: pyfunc
+mlserver_grpc_url: localhost:8081
+opcua_namespace: http://factoryml.alexandra.dk
+opcua_server_url: opc.tcp://localhost:4840/factoryml/server/
+
+tag_mapping:
+  inputs:
+    - name: a
+      tag: weight_of_platform
+    - name: b
+      tag: weight_of_load
+  outputs:
+    - name: sum
+      tag: total_weight

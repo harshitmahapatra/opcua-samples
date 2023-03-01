@@ -1,14 +1,17 @@
+import asyncio
+import logging
 from typing import Dict, List
 
 import grpc
+import yaml
+from asyncua import Client
 
 import dataplane_pb2
 import dataplane_pb2_grpc
 
 
 def call_model(mlserver_grpc_url: str, model_name: str, input_values: Dict) -> Dict:
-    print("----INPUT VALUES----")
-    print(input_values)
+    print(f"\n---INPUT VALUES---\n {input_values}")
 
     channel = grpc.insecure_channel(target=mlserver_grpc_url)
     stub = dataplane_pb2_grpc.GRPCInferenceServiceStub(channel=channel)
@@ -21,10 +24,8 @@ def call_model(mlserver_grpc_url: str, model_name: str, input_values: Dict) -> D
         model_metadata_req
     )
 
-    print("----DISCOVERED INPUT SPEC----")
-    print(model_metadata.inputs)
-    print("----DISCOVERED OUTPUT SPEC----")
-    print(model_metadata.outputs)
+    print(f"\n----DISCOVERED INPUT SPEC----\n {model_metadata.inputs}")
+    print(f"\n----DISCOVERED OUTPUT SPEC----\n {model_metadata.outputs}")
 
     print("Calling model inference...")
 
@@ -42,8 +43,7 @@ def call_model(mlserver_grpc_url: str, model_name: str, input_values: Dict) -> D
 
     output_values = parse_output_values(model_inference_res.outputs)
 
-    print("----OUTPUT VALUES----")
-    print(output_values)
+    print(f"\n----OUTPUT VALUES----\n {output_values}")
 
     return output_values
 
@@ -82,8 +82,16 @@ def parse_output_values(
         output_value = extract_value_from_tensor_content(
             datatype=infer_output.datatype, tensor_contents=infer_output.contents
         )
+        if is_shape_scalar(infer_output.shape):
+            output_value = output_value[0]
         output_values[infer_output.name] = output_value
     return output_values
+
+def is_shape_scalar(shape):
+    for dim in shape:
+        if (dim!=1) and (dim!=-1):
+            return False
+    return True
 
 
 def insert_value_into_tensor_content(
@@ -150,11 +158,53 @@ def extract_value_from_tensor_content(
     return output_value
 
 
+def load_config():
+    with open("opcua_config.yml", "r") as file:
+        config = yaml.safe_load(file)
+    return config
+
+
+async def link_opcua_server_and_ml_model(config):
+    opcua_server_url = config["opcua_server_url"]
+    opcua_namespace = config["opcua_namespace"]
+    model_name = config["model_name"]
+    mlserver_grpc_url = config["mlserver_grpc_url"]
+    inputs = config["tag_mapping"]["inputs"]
+    outputs = config["tag_mapping"]["outputs"]
+
+    print(f"Connecting to {opcua_server_url} ...")
+    async with Client(url=opcua_server_url) as client:
+        # Find the namespace index
+        nsidx = await client.get_namespace_index(opcua_namespace)
+        print(f"Namespace Index for '{opcua_namespace}': {nsidx}")
+
+        input_values = {}
+
+        predict_obj = await client.nodes.root.get_child(
+            ["0:Objects", f"{nsidx}:{model_name}", f"{nsidx}:predict"]
+        )
+        predict = await predict_obj.read_value()
+
+        if predict:
+            print("Predict is enabled continuing with prediction...")
+            for input in inputs:
+                input_obj = await client.nodes.root.get_child(
+                    ["0:Objects", f"{nsidx}:{model_name}", f"{nsidx}:{input['tag']}"]
+                )
+                input_val = await input_obj.read_value()
+                input_values[input["name"]] = input_val
+
+            output_values = call_model(mlserver_grpc_url, model_name, input_values)
+
+            for output in outputs:
+                output_obj = await client.nodes.root.get_child(
+                    ["0:Objects", f"{nsidx}:{model_name}", f"{nsidx}:{output['tag']}"]
+                )
+                await output_obj.write_value(output_values[output["name"]])
+            await predict_obj.write_value(False)
+        else:
+            print("Predict is disabled skipping prediction...")
+
 if __name__ == "__main__":
-    mlserver_grpcs_url = "localhost:8081"
-    model_name = "pyfunc"
-    call_model(
-        mlserver_grpc_url=mlserver_grpcs_url,
-        model_name=model_name,
-        input_values={"a": [5], "b": [6]},
-    )
+    config = load_config()
+    asyncio.run(link_opcua_server_and_ml_model(config))
