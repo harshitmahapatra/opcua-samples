@@ -7,9 +7,7 @@ import dataplane_pb2
 import dataplane_pb2_grpc
 
 
-def add_numbers(
-    mlserver_grpc_url: str, model_name: str, input_values: Dict[str, np.ndarray]
-) -> int:
+def call_model(mlserver_grpc_url: str, model_name: str, input_values: Dict) -> Dict:
     print("----INPUT VALUES----")
     print(input_values)
 
@@ -48,12 +46,12 @@ def add_numbers(
     print("----OUTPUT VALUES----")
     print(output_values)
 
-    return 0
+    return output_values
 
 
 def generate_infer_inputs(
     inputs_metadata: List[dataplane_pb2.ModelMetadataResponse.TensorMetadata],
-    inputs_values: Dict[str, np.ndarray],
+    inputs_values: Dict,
 ):
     input_iterable: List[dataplane_pb2.ModelInferRequest.InferInputTensor] = []
 
@@ -79,7 +77,7 @@ def generate_infer_inputs(
 
 def parse_output_values(
     model_infer_outputs: List[dataplane_pb2.ModelInferResponse.InferOutputTensor],
-):
+) -> Dict:
     output_values = {}
     for infer_output in model_infer_outputs:
         output_value = extract_value_from_tensor_content(
@@ -156,7 +154,7 @@ def extract_value_from_tensor_content(
 if __name__ == "__main__":
     mlserver_grpcs_url = "localhost:8081"
     model_name = "pyfunc"
-    add_numbers(
+    call_model(
         mlserver_grpc_url=mlserver_grpcs_url,
         model_name=model_name,
         input_values={"a": [5], "b": [6]},
