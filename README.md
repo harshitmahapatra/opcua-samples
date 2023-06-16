@@ -2,12 +2,12 @@
 
 The repository contains code to start a OPC UA server and a corresponding client using the python based asyncua library.
 
-** N.B. asyncua is licensed under LGPLv3, that means it is free to be used in a commercial software without any requirements, however if the library itself is modified, then those modifications must be published under LGPLv3. **
+**N.B. asyncua is licensed under LGPLv3, that means it is free to be used in a commercial software without any requirements, however if the library itself is modified, then those modifications must be published under LGPLv3.**
 
 The client and server examples are taken from the asyncua repository and are thus assumed to have the LGPLv3 license.
 
 
-** N.B. opcua-gui-client is licensed under GPLv3 which means that it cannot be used or modified without the associated software also being distributed under GPLv3, thus the use of opcua-gui-client in any potentially commercial software is not recommended. **
+**N.B. opcua-gui-client is licensed under GPLv3 which means that it cannot be used or modified without the associated software also being distributed under GPLv3, thus the use of opcua-gui-client in any potentially commercial software is not recommended.**
 
 ## Setup
 
